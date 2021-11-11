@@ -1,139 +1,107 @@
-#define _CRTDBG_MAP_ALLOC
 
-#include <stdio.h>
+//#define _CRTDBG_MAP_ALLOC
 #include <stdlib.h>
-#include <crtdbg.h>
+//#include <crtdbg.h>
+#include <stdio.h>
 #include <inttypes.h>
+#include <stdbool.h>
 
-void array_int_fill(int64_t* array, size_t size);
-int64_t* array_int_read(size_t* size);
-int64_t* array_int_min(int64_t* array, size_t size);
-int64_t** marray_read(size_t* rows, size_t** sizes);
-void marray_print(int64_t** marray, size_t* sizes, size_t rows);
-int64_t* int64_ptr_min(int64_t* x, int64_t* y);
-int64_t* marray_int_min(int64_t** marray, size_t* sizes, size_t rows);
-void marray_normalize(int64_t** marray, size_t sizes[], size_t rows, int64_t m);
-void marray_free(int64_t** marray, size_t rows);
-void perform();
+struct array_int {
+	int64_t* data;
+	size_t size;
+};
+
+struct maybe_int64 {
+	int64_t value;
+	bool valid;
+};
+
+struct maybe_int64 some_int64(int64_t i) {
+	return (struct maybe_int64) { i, true };
+}
+
+const struct maybe_int64 none_int64 = { 0 };
+
+size_t read_size();
+void array_int_fill(int64_t* array, size_t sz);
+struct array_int array_int_read();
+struct maybe_int64 array_int_get(struct array_int a, size_t i);
+bool array_int_set(struct array_int a, size_t i, int64_t value);
+void array_int_print(struct array_int array);
+struct maybe_int64 array_int_min(struct array_int array);
+void array_int_free(struct array_int a);
 
 int main() {
-	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-	perform();
+	//_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+	struct array_int arr = array_int_read();
+	printf("%" PRId64"\n", array_int_get(arr, 3).value);
+	printf("%" PRId64"\n", array_int_get(arr, 1000).value);
+	array_int_set(arr, 2, 45);
+	array_int_print(arr);
+	printf("\n");
+	printf("%" PRId64 "\n", array_int_min(arr).value);
+	array_int_free(arr);
 }
 
-void array_int_fill(int64_t* array, size_t size) {
-	for (size_t i = 0; i < size; i++) {
-		scanf_s("%" SCNd64, array + i);
+
+size_t read_size() {
+	size_t sz = 0;
+	scanf_s("%zu", &sz);
+	return sz;
+}
+
+void array_int_fill(int64_t* array, size_t sz) {
+	for (size_t i = 0; i < sz; i = i + 1) {
+		scanf_s("%" SCNd64, &array[i]);
 	}
 }
 
-int64_t* array_int_read(size_t* size) {
-	scanf_s("%zu", size);
-	int64_t* mass = (int64_t*) malloc((*size) * sizeof(int64_t));
-	for (size_t i = 0; i < *size; i++) {
-		scanf_s("%" SCNd64, mass + i);
+struct array_int array_int_read() {
+	const size_t size = read_size();
+	if (size > 0) {
+		int64_t* array = (int64_t*)malloc(sizeof(int64_t) * size);
+		array_int_fill(array, size);
+		return (struct array_int) { .data = array, .size = size };
 	}
-	return mass;
+	else return (struct array_int) { 0 };
 }
 
-int64_t* array_int_min(int64_t* array, size_t size) {
-	int64_t min = 0;
-	int64_t* min_address = NULL;
-	if (size != 0) {
-		min = *array;
-		min_address = array;
-		for (size_t i = 1; i < size; i++) {
-			if (array[i] < min) {
-				min = array[i];
-				min_address = array + i;
-			}
-		}
-	}
-	return min_address;
+struct maybe_int64 array_int_get(struct array_int a, size_t i) {
+	if (a.size <= i)
+		return none_int64;
+	else
+		return some_int64((a.data)[i]);
 }
 
-int64_t* int64_ptr_min(int64_t* x, int64_t* y) {
-	int64_t* result = x;
-	if ((x == NULL) || (y == NULL)) {
-		if (x == NULL) result = y;
-		else if (y == NULL) result = x;
+bool array_int_set(struct array_int a, size_t i, int64_t value) {
+	if (a.size <= i) {
+		return false;
 	}
 	else {
-		if ((*x) > (*y)) result = y;
-		else result = x;
+		(a.data)[i] = value;
+		return true;
 	}
-	if ((x == NULL) && (y == NULL)) result = NULL;
-	return result;
+
 }
 
-
-int64_t* marray_int_min(int64_t** marray, size_t* sizes, size_t rows) {
-	int64_t* min = NULL;
-	for (size_t i = 0; i < rows; i++) {
-		for (size_t j = 0; j < sizes[i]; j++) {
-			min = int64_ptr_min(min, marray[i] + j);
-		}
-	}
-	return min;
-}
-
-void marray_normalize(int64_t** marray, size_t sizes[], size_t rows, int64_t m) {
-	for (size_t i = 0; i < rows; i++) {
-		for (size_t j = 0; j < sizes[i]; j++) {
-			marray[i][j] -= m;
-		}
+void array_int_print(struct array_int array) {
+	for (size_t i = 0; i < array.size; i = i + 1) {
+		printf("%" PRId64 " ", array_int_get(array, i).value);
 	}
 }
 
-int64_t** marray_read(size_t* rows, size_t** sizes) {
-	scanf_s("%zu", rows);
-	int64_t** arr = (int64_t**)malloc((*rows)*sizeof(int64_t*));
-	*sizes = (size_t*)malloc((*rows)*sizeof(size_t));
-
-	for (size_t i = 0; i < *rows; i++){
-		scanf_s("%zu", &((*sizes)[i]));
-		arr[i] = (int64_t*)malloc(((*sizes)[i]) * sizeof(int64_t));
-		for (size_t j = 0; j < (*sizes)[i]; j++) {
-			scanf_s("%" PRId64, &arr[i][j]);
-		}
-		
+struct maybe_int64 array_int_min(struct array_int array) {
+	if (array.size == 0) return none_int64;
+	struct maybe_int64 minimum = { .value = (array.data)[0], .valid = true };
+	for (size_t i = 1; i < array.size; i++) {
+		if ((array.data)[i] < minimum.value) minimum.value = (array.data)[i];
 	}
-	return arr;
+	return minimum;
 }
 
-void marray_print(int64_t** marray, size_t* sizes, size_t rows) {
-	for (size_t i = 0; i < rows; i++) {
-		for (size_t j = 0; j < sizes[i]; j++) {
-			printf("%" PRId64, marray[i][j]);
-			printf(" ");
-		}
-		printf("\n");
+void array_int_free(struct array_int a) {
+	if (a.size > 0) {
+		free(a.data);
+		a.size = 0;
 	}
 }
-
-void marray_free(int64_t** marray, size_t rows) {
-	for (size_t i = 0; i < rows; i++) {
-		free(*(marray + i));
-	}
-	free(marray);
-}
-
-void perform() {
-	size_t* sizes = NULL;
-	size_t rows = 0;
-	int64_t* minimum = (int64_t*) malloc(sizeof(int64_t));
-	int64_t** arr = marray_read(&rows, &sizes);
-	minimum = marray_int_min(arr, sizes, rows);
-	marray_normalize(arr, sizes, rows, *minimum);
-	marray_print(arr, sizes, rows);
-	marray_free(arr, rows);
-	free(sizes);
-	free(minimum);
-}
-
-/*Данные
-3
-2 124 11
-4 12 45 1 15
-3 51235 125 222
-*/
