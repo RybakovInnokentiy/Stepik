@@ -1,10 +1,10 @@
 #define _CRTDBG_MAP_ALLOC
-#include <iostream>
+
 #include <stdio.h>
-#include <cstdlib>
+#include <stdlib.h>
 #include <crtdbg.h>
 #include <inttypes.h>
-using namespace std;
+
 void array_int_fill(int64_t* array, size_t size);
 int64_t* array_int_read(size_t* size);
 int64_t* array_int_min(int64_t* array, size_t size);
